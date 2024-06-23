@@ -9,13 +9,17 @@ import { Account } from '../types/Account';
 interface AccountTableProps {
   accounts: Account[];
   onDelete: (id: number) => void;
+  onRestore?: (id: number) => void;// Добавляем onRestore
 }
 
-const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete }) => (
+const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete, onRestore }) => (
   <TableContainer component={Paper} sx={{width: '100%'}}>
     <Table size="medium">
       <TableHead>
         <TableRow>
+          {onRestore && 
+            <TableCell></TableCell>
+          }
           <TableCell>ID</TableCell>
           <TableCell>Имя</TableCell>
           <TableCell>Фамилия</TableCell>
@@ -30,7 +34,7 @@ const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete }) => (
       </TableHead>
       <TableBody>
         {accounts.map(account => (
-          <AccountRow key={account.id} account={account} onDelete={onDelete} />
+          <AccountRow key={account.id} account={account} onDelete={onDelete} onRestore={onRestore}/>
         ))}
       </TableBody>
     </Table>

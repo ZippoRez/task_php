@@ -23,6 +23,7 @@ const AccountEdit: React.FC = () => {
     phone_1: '',
     phone_2: '',
     phone_3: '',
+    deleted_at: '',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

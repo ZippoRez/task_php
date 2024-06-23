@@ -8,4 +8,5 @@ export interface Account {
     phone_1: string | null;
     phone_2: string | null;
     phone_3: string | null;
+    deleted_at: string | null;
 }

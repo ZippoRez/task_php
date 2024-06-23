@@ -21,6 +21,7 @@ const AccountCreate: React.FC = () => {
     phone_1: '',
     phone_2: '',
     phone_3: '',
+    deleted_at:'',
   });
 
   const [error, setError] = useState<string | null>(null);

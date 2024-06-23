@@ -26,22 +26,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
 
     if ($accountId > 0) {
-        if ($accountObj->deleteAccount($accountId)) {
-            // Успешное удаление
-            http_response_code(200); // OK
-            echo json_encode([
-                'success' => true,
-                'message' => 'Аккаунт успешно удален'
-            ]);
-        } else {
-            // Ошибка при удалении
-            http_response_code(500); // Internal Server Error (или другой подходящий код)
-            echo json_encode([
-                'success' => false,
-                'error' => $accountObj->getError(),
-                'errorCode' => $accountObj->getErrorCode()
-            ]);
+        //  Проверяем,  нужно ли "пометить"  как удаленный или удалить окончательно
+        $permanentDelete = isset($data['permanent']) && $data['permanent'] === true; 
+
+        if ($permanentDelete) {
+            //  Окончательное удаление аккаунта
+            if ($accountObj->permanentDeleteAccount($accountId)) { 
+                http_response_code(200); //  OK
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Аккаунт успешно удален'
+                ]);
+            } else {
+                http_response_code(500); //  Internal Server Error 
+                echo json_encode([
+                    'success' => false,
+                    'error' => $accountObj->getError(),
+                    'errorCode' => $accountObj->getErrorCode()
+                ]);
+            }
+        } else { 
+            //  "Мягкое"  удаление (пометка deleted_at)
+            if ($accountObj->deleteAccount($accountId)) { 
+                http_response_code(200); //  OK
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Аккаунт помечен как удаленный' 
+                ]);
+            } else {
+                http_response_code(500); //  Internal Server Error 
+                echo json_encode([
+                    'success' => false,
+                    'error' => $accountObj->getError(),
+                    'errorCode' => $accountObj->getErrorCode()
+                ]);
+            }
         }
+
     } else {
         // Неверный ID аккаунта
         http_response_code(400); // Bad Request

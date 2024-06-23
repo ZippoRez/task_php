@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // Параметры пагинации 
             $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
             $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
-
+            $deleted = filter_var($_GET['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN); 
             $totalAccounts = $accountObj->getTotalAccounts();
             if ($page <= 0 || $limit <= 0 || ($page-1) * $limit > $totalAccounts) {
                 throw new Exception("Некорректные параметры пагинации."); 
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             $totalPages = ceil($totalAccounts / $limit);
 
-            $accounts = $accountObj->getAccounts($page, $limit);
+            $accounts = $deleted ? $accountObj->getDeletedAccounts($page, $limit) : $accountObj->getAccounts($page, $limit);
             $accountData = [];
             foreach ($accounts as $account) {
                 $accountData[] = [
@@ -58,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     'position' => $account->getPosition(),
                     'phone_1' => $account->getPhone1(),
                     'phone_2' => $account->getPhone2(),
-                    'phone_3' => $account->getPhone3()
+                    'phone_3' => $account->getPhone3(),
+                    'deleted_at' => $account->getDeleted_At(),
                 ];
             }
             // var_dump($accounts);
