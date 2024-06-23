@@ -1,69 +1,78 @@
 <?php
+// Устанавливаем Content-Type для JSON ответа
+header('Content-Type: application/json');
+// Настраиваем CORS
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
+header('Access-Control-Allow-Headers: Content-Type'); 
 
-header('Content-Type: application/json'); 
-header('Access-Control-Allow-Origin: http://localhost:3000'); // Разрешить запросы с этого источника
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE'); // Разрешить эти HTTP-методы 
-header('Access-Control-Allow-Headers: Content-Type'); // Разрешить этот заголовок
+// Подключаем необходимые файлы
 require_once 'includes/database.php';
 require_once 'includes/account.php';
 
+// Устанавливаем уровень логирования ошибок
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/error.log'); 
+
+// Создаем объекты для работы с базой данных и аккаунтами
 $db = new Database();
 $accountObj = new Account($db->getConnection());
-$accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-// Обработка GET-запроса для получения списка аккаунтов (с пагинацией)
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if ($accountId > 0) {
-        // --- Получение одного аккаунта по ID ---
 
+// Получаем ID аккаунта из параметров запроса (если он передан)
+$accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Обработка GET-запроса (получение списка аккаунтов или одного аккаунта по ID)
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Если передан ID аккаунта, получаем информацию о нем
+    if ($accountId > 0) {
         if (!$accountObj->getAccountById($accountId)) {
-            http_response_code(404); // Not Found
+            // Если аккаунт не найден, отправляем ошибку 404 Not Found
+            http_response_code(404); 
             echo json_encode([
                 'success' => false,
                 'error' => 'Аккаунт не найден',
-                'errorCode' => ERROR_ACCOUNT_NOT_FOUND
+                'errorCode' => ERROR_ACCOUNT_NOT_FOUND 
             ]);
-            exit;
+            exit; 
         }
 
-        // Отправка данных аккаунта
-        http_response_code(200); // OK
+        // Отправляем данные аккаунта
+        http_response_code(200); 
         echo json_encode([
             'success' => true,
             'message' => 'Данные аккаунта',
-            'data' => $accountObj->toArray()
+            'data' => $accountObj->toArray() 
         ]);
-
     } else {
+        // Если ID аккаунта не передан, получаем список аккаунтов с пагинацией
         try {
-            // Параметры пагинации 
-            $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-            $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
-            $deleted = filter_var($_GET['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN); 
+            // Получаем параметры пагинации из запроса
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1; // Проверка на минимальное значение
+            $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10; // Проверка на минимальное значение
+            $deleted = filter_var($_GET['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            // Получаем общее количество аккаунтов (для пагинации)
             $totalAccounts = $accountObj->getTotalAccounts();
-            if ($page <= 0 || $limit <= 0 || ($page-1) * $limit > $totalAccounts) {
+
+            // Проверка на корректность параметров пагинации
+            if (($page - 1) * $limit > $totalAccounts) {
                 throw new Exception("Некорректные параметры пагинации."); 
             }
 
+            // Вычисляем количество страниц
             $totalPages = ceil($totalAccounts / $limit);
 
+            // Получаем список аккаунтов (с учетом deleted)
             $accounts = $deleted ? $accountObj->getDeletedAccounts($page, $limit) : $accountObj->getAccounts($page, $limit);
+
+            // Формируем массив данных аккаунтов для ответа
             $accountData = [];
             foreach ($accounts as $account) {
-                $accountData[] = [
-                    'id' => $account->getId(),
-                    'first_name' => $account->getFirstName(),
-                    'last_name' => $account->getLastName(),
-                    'email' => $account->getEmail(),
-                    'company_name' => $account->getCompanyName(),
-                    'position' => $account->getPosition(),
-                    'phone_1' => $account->getPhone1(),
-                    'phone_2' => $account->getPhone2(),
-                    'phone_3' => $account->getPhone3(),
-                    'deleted_at' => $account->getDeleted_At(),
-                ];
+                $accountData[] = $account->toArray(); 
             }
-            // var_dump($accounts);
-            // Формирование успешного ответа
+
+            // Формирование ответа
             $response = [
                 'success' => true,
                 'message' => 'Список аккаунтов',
@@ -74,23 +83,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     'totalItems'  => $totalAccounts,
                 ]
             ];
-            http_response_code(200); // OK
-            // var_dump($accounts);
-            echo json_encode($response); 
+
+            // Отправка ответа
+            http_response_code(200); 
+            echo json_encode($response);
 
         } catch (Exception $e) {
-            // Обработка ошибок
-            http_response_code(400); // Bad Request 
+            // Логируем ошибку
+            error_log("Ошибка при получении списка аккаунтов: " . $e->getMessage());
+
+            // Отправляем сообщение об ошибке
+            http_response_code(400); 
             echo json_encode([
                 'success' => false,
-                'error' => $e->getMessage(), // Сообщение об ошибке
-                'errorCode' => $accountObj->getErrorCode() // Код ошибки
+                'error' => $e->getMessage(),
+                'errorCode' => $accountObj->getErrorCode() 
             ]);
         }
     }
-
-    } else {
-        // Обработка других методов (не GET)
-        http_response_code(405); // Method Not Allowed
-        echo json_encode(['success' => false, 'error' => 'Метод не разрешен. Используйте GET' ]);
-    }
+} else {
+    // Обработка других HTTP-методов (не GET)
+    http_response_code(405); 
+    echo json_encode(['success' => false, 'error' => 'Метод не разрешен. Используйте GET']);
+}
