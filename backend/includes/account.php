@@ -110,6 +110,29 @@
             }
         }
 
+        public function getDeletedAccounts($page, $limit) {
+            $offset = ($page - 1) * $limit;
+            try {
+                $sql = "SELECT * FROM accounts WHERE deleted_at IS NOT NULL LIMIT :limit OFFSET :offset";
+                $stmt = $this->db->prepare($sql);
+                $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+                $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+                $stmt->execute();
+        
+                $accounts = [];
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $account = new Account($this->db);
+                    // ... (заполнение свойств объекта Account из $row) ...
+                    $accounts[] = $account;
+                }
+                return $accounts;
+            } catch (PDOException $e) {
+                $this->lastError = "Ошибка базы данных при получении списка аккаунтов: " . $e->getMessage();
+                $this->errorCode = $e->getCode();
+                return false;
+            }
+        }
+
         public function updateAccount($data){
             try{
                 if(!$this->validateData($data)){
@@ -148,7 +171,7 @@
 
         public function deleteAccount($id){
             try{
-                $sql = "DELETE FROM accounts WHERE id = :id";
+                $sql = "UPDATE accounts SET deleted_at = NOW() WHERE id = :id";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([':id' => $id]);
                 return true;
@@ -223,9 +246,21 @@
         }
 
         // Проверка на уникальность email
-        if ($this->isEmailExists($data['email'])) {
+        if ($this->isEmailExists($data['email'], $this->id)) {
             $this->lastError = "Ошибка: Пользователь с таким email уже существует.";
             $this->errorCode = ERROR_EMAIL_EXISTS;
+            return false;
+        }
+
+        if ($this->isPhoneDuplicate($data, $this->id)) {
+            $this->lastError = "Ошибка: Один из номеров телефонов уже используется другим аккаунтом.";
+            $this->errorCode = ERROR_INVALID_PHONE;
+            return false;
+        }
+
+        if ($this->hasDuplicatePhones($data)) {
+            $this->lastError = "Ошибка: У пользователя не может быть одинаковых номеров телефонов.";
+            $this->errorCode = ERROR_INVALID_PHONE;
             return false;
         }
 
@@ -244,11 +279,21 @@
     }
 
     // Приватный метод для проверки существования email
-    private function isEmailExists($email) {
+    private function isEmailExists($email, $excludeId = null): bool {
         try {
             $sql = "SELECT COUNT(*) FROM accounts WHERE email = :email";
+            if (!is_null($excludeId)) {
+                $sql .= " AND id != :excludeId";
+            }
+    
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':email' => $email]);
+            $stmt->bindParam(':email', $email);
+    
+            if (!is_null($excludeId)) {
+                $stmt->bindParam(':excludeId', $excludeId, PDO::PARAM_INT); 
+            }
+    
+            $stmt->execute();
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
             $this->lastError = "Ошибка базы данных при проверке email: " . $e->getMessage();
@@ -257,6 +302,60 @@
         }
     }
 
-    // Приватный метод для валидации российского номера телефона
+    private function isPhoneDuplicate($data, $excludeId = null): bool {
+        $phoneFields = ['phone_1', 'phone_2', 'phone_3'];
+    
+        foreach ($phoneFields as $field) {
+            if (!empty($data[$field])) {
+                $phoneNumber = $data[$field];
+                $sql = "SELECT COUNT(*) FROM accounts WHERE $field = :phoneNumber";
+                if (!is_null($excludeId)) {
+                    $sql .= " AND id != :excludeId";
+                }
+    
+                $stmt = $this->db->prepare($sql);
+                $stmt->bindParam(':phoneNumber', $phoneNumber);
+                if (!is_null($excludeId)) {
+                    $stmt->bindParam(':excludeId', $excludeId, PDO::PARAM_INT); 
+                }
+                $stmt->execute();
+    
+                if ($stmt->fetchColumn() > 0) {
+                    return true; // Найден дубликат
+                }
+            }
+        }
+        return false; // Дубликатов нет
     }
+
+    private function hasDuplicatePhones($data): bool {
+        $phoneNumbers = array_filter([
+            $data['phone_1'], 
+            $data['phone_2'], 
+            $data['phone_3']
+        ], function($phone) {
+            return !empty($phone); 
+        });
+    
+        // Проверяем,  есть ли дубликаты в массиве номеров
+        return count($phoneNumbers) !== count(array_unique($phoneNumbers)); 
+    }
+
+    public function toArray(): array {
+        return [
+            'id' => $this->id,
+            'first_name' => $this->firstName,
+            'last_name' => $this->lastName,
+            'email' => $this->email,
+            'company_name' => $this->companyName,
+            'position' => $this->position,
+            'phone_1' => $this->phone1,
+            'phone_2' => $this->phone2,
+            'phone_3' => $this->phone3,
+        ];
+    }
+    }
+
+    
+
 ?>

@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json'); // Устанавливаем заголовок для JSON
-
+header('Access-Control-Allow-Origin: http://localhost:3000'); // Разрешить запросы с этого источника
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE'); // Разрешить эти HTTP-методы 
+header('Access-Control-Allow-Headers: Content-Type'); // Разрешить этот заголовок
 require_once 'includes/database.php';
 require_once 'includes/account.php';
 require_once 'includes/error_codes.php'; // (файл с кодами ошибок)
@@ -8,6 +10,15 @@ require_once 'utils/helper.php';
 
 $db = new Database();
 $account = new Account($db->getConnection());
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    // Обработка preflight-запроса
+    header('Access-Control-Allow-Origin: http://localhost:3000'); 
+    header('Access-Control-Allow-Methods: POST'); // Разрешаем только POST
+    header('Access-Control-Allow-Headers: Content-Type'); 
+    http_response_code(200); // OK
+    exit; // Завершаем обработку OPTIONS-запроса
+} 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Получение JSON-данных из тела запроса

@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json');
-
+header('Access-Control-Allow-Origin: http://localhost:3000'); // Разрешить запросы с этого источника
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE'); // Разрешить эти HTTP-методы 
+header('Access-Control-Allow-Headers: Content-Type'); // Разрешить этот заголовок
 require_once 'includes/database.php';
 require_once 'includes/account.php';
 require_once 'includes/error_codes.php';
@@ -8,12 +10,22 @@ require_once 'includes/error_codes.php';
 $db = new Database();
 $accountObj = new Account($db->getConnection());
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    //  Отправляем заголовки CORS для preflight-запроса
+    header("Access-Control-Allow-Origin: http://localhost:3000");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    http_response_code(204); //  No Content
+    exit; 
+} 
+
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     // Получение ID аккаунта для удаления из данных запроса
     $data = json_decode(file_get_contents('php://input'), true);
     $accountId = isset($data['id']) ? (int)$data['id'] : 0; 
 
-    if ($accountId > 0 && $accountId < $accountObj->getTotalAccounts()) {
+
+    if ($accountId > 0) {
         if ($accountObj->deleteAccount($accountId)) {
             // Успешное удаление
             http_response_code(200); // OK
