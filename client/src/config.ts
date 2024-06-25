@@ -1,5 +1,7 @@
+//  Объект config  хранит конфигурационные параметры приложения 
 const config = {
-    apiUrl: "http://127.0.0.1",
-}
-
-export default config;
+    apiUrl: "http://127.0.0.1", //  Базовый URL API сервера
+  };
+  
+  //  Экспортируем config для использования в других частях приложения
+  export default config;

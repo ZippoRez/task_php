@@ -5,7 +5,7 @@ require_once 'includes/database.php';
 // Устанавливаем уровень логирования ошибок
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
+ini_set('error_log', __DIR__ . '/cron.log');
 
 // Создаем объект для работы с базой данных
 $db = new Database();

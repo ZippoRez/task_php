@@ -1,127 +1,167 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; //  Для навигации
 import {
   Button, Typography, Pagination, Select, MenuItem, FormControl, InputLabel,
   SelectChangeEvent,
   Container,
-} from '@mui/material';
-import { Account } from '../types/Account';
-import config from '../config';
-import AccountTable from './AccountTable';
-import ConfirmationDialog from './ConfirmationDialog';
+} from '@mui/material'; // Компоненты Material-UI
+import { Account } from '../types/Account'; // Тип данных Account
+import config from '../config'; //  Конфигурация приложения (API URL)
+import AccountTable from './AccountTable'; //  Компонент таблицы аккаунтов
+import ConfirmationDialog from './ConfirmationDialog'; //  Компонент диалога подтверждения
 
+// Компонент для отображения списка аккаунтов
 const AccountList: React.FC = () => {
+  // Состояние для хранения списка аккаунтов
   const [accounts, setAccounts] = useState<Account[]>([]);
+  // Состояние для индикации загрузки данных
   const [loading, setLoading] = useState(true);
+  // Состояние для хранения сообщения об ошибке
   const [error, setError] = useState<string | null>(null);
 
   // Состояния для пагинации
-  const [currentPage, setCurrentPage] = useState(1);
-  const [accountsPerPage, setAccountsPerPage] = useState(10);
-  const [totalAccounts, setTotalAccounts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1); //  Текущая страница
+  const [accountsPerPage, setAccountsPerPage] = useState(10); //  Количество аккаунтов на странице
+  const [totalAccounts, setTotalAccounts] = useState(0); //  Общее количество аккаунтов
 
-  //  Состояние для диалога подтверждения
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [accountIdToDelete, setAccountIdToDelete] = useState<number | null>(null);
+  // Состояние для диалога подтверждения удаления
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); //  Открыт ли диалог
+  const [accountIdToDelete, setAccountIdToDelete] = useState<number | null>(null); //  ID аккаунта для удаления
 
+  //  useEffect для загрузки данных при монтировании компонента и изменении параметров пагинации
   useEffect(() => {
+    // Асинхронная функция для загрузки данных 
     const fetchData = async () => {
       try {
+        //  Формируем URL запроса с параметрами пагинации
         const response = await fetch(
-          `${config.apiUrl}/index.php?page=${currentPage}&limit=${accountsPerPage}&deleted=false`,{
-            method: 'GET',
+          `${config.apiUrl}/index.php?page=${currentPage}&limit=${accountsPerPage}&deleted=false`, { //  Загружаем неудаленные аккаунты
+            method: 'GET', 
           });
+
+        // Проверяем статус ответа
         if (!response.ok) {
           throw new Error('Ошибка при загрузке данных');
         }
+
+        // Парсим ответ сервера в JSON
         const data = await response.json();
-        setAccounts(data.data);
-        setTotalAccounts(data.pagination.totalItems);
+
+        // Обновляем состояния с полученными данными
+        setAccounts(data.data); //  Список аккаунтов
+        setTotalAccounts(data.pagination.totalItems); //  Общее количество аккаунтов
       } catch (err) {
+        // Обрабатываем ошибки при загрузке данных
         setError('Ошибка при загрузке данных');
         console.error(err);
       } finally {
-        setLoading(false);
+        // Скрываем индикатор загрузки
+        setLoading(false); 
       }
     };
 
+    //  Вызываем функцию загрузки данных
     fetchData();
-  }, [currentPage, accountsPerPage]);
+  }, [currentPage, accountsPerPage]); //  Зависимости useEffect - при изменении currentPage или accountsPerPage данные будут загружены заново
 
+  // Обработчик клика по кнопке "Удалить"
   const handleDelete = (id: number) => {
-    //  Открываем диалог подтверждения
-    setAccountIdToDelete(id);
-    setDeleteDialogOpen(true);
+    // Сохраняем ID аккаунта для удаления
+    setAccountIdToDelete(id); 
+    // Открываем диалог подтверждения удаления
+    setDeleteDialogOpen(true); 
   };
 
+  // Обработчик подтверждения удаления в диалоге
   const handleConfirmDelete = async () => {
-    //  Закрываем диалог
-    setDeleteDialogOpen(false);
+    // Закрываем диалог подтверждения
+    setDeleteDialogOpen(false); 
 
+    // Проверяем, что ID аккаунта для удаления установлен
     if (accountIdToDelete !== null) {
       try {
+        // Отправляем DELETE запрос на сервер для удаления аккаунта
         const response = await fetch(`${config.apiUrl}/delete.php`, {
-          method: 'DELETE',
+          method: 'DELETE', 
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: accountIdToDelete }),
+          body: JSON.stringify({ id: accountIdToDelete }), // Отправляем ID аккаунта в теле запроса
         });
 
+        // Проверяем статус ответа
         if (!response.ok) {
-          throw new Error('Ошибка при удалении аккаунта');
+          throw new Error('Ошибка при удалении аккаунта'); 
         }
 
-        setAccounts(accounts.filter((account) => account.id !== accountIdToDelete));
+        // Удаляем аккаунт из списка accounts в состоянии
+        setAccounts(accounts.filter((account) => account.id !== accountIdToDelete)); 
       } catch (err) {
         setError('Ошибка при удалении аккаунта');
-        console.error(err);
+        console.error(err); 
       } finally {
-        setAccountIdToDelete(null); // Сбрасываем ID после удаления
+        // Сбрасываем ID аккаунта для удаления
+        setAccountIdToDelete(null); 
       }
     }
   };
 
+  // Обработчик отмены удаления в диалоге
   const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setAccountIdToDelete(null);
+    // Закрываем диалог подтверждения
+    setDeleteDialogOpen(false); 
+    // Сбрасываем ID аккаунта для удаления
+    setAccountIdToDelete(null); 
   };
 
+  // Обработчик изменения страницы пагинации
   const handleChangePage = (event: React.ChangeEvent<unknown>, newPage: number) => {
-    setCurrentPage(newPage);
+    // Обновляем состояние currentPage
+    setCurrentPage(newPage); 
   };
 
+  // Обработчик изменения количества аккаунтов на странице
   const handleChangeRowsPerPage = (event: SelectChangeEvent<number>) => {
+    // Обновляем состояние accountsPerPage
     setAccountsPerPage(Number(event.target.value));
-    setCurrentPage(1);
+    // Сбрасываем текущую страницу на первую
+    setCurrentPage(1); 
   };
 
+  // Если данные загружаются, отображаем сообщение "Загрузка данных..."
   if (loading) {
-    return <Typography variant="body1">Загрузка данных...</Typography>;
+    return <Typography variant="body1">Загрузка данных...</Typography>; 
   }
 
+  // Если произошла ошибка при загрузке данных, отображаем сообщение об ошибке
   if (error) {
-    return <Typography color="error" variant="body1">Ошибка: {error}</Typography>;
+    return <Typography color="error" variant="body1">Ошибка: {error}</Typography>; 
   }
-  
+
+  // Отображение списка аккаунтов
   return (
     <>
-      <AccountTable accounts={accounts} onDelete={handleDelete} />
+      {/* Таблица аккаунтов */}
+      <AccountTable accounts={accounts} onDelete={handleDelete} /> 
+
+      {/* Диалог подтверждения удаления */}
       <ConfirmationDialog
-      open={deleteDialogOpen}
-      onClose={handleCancelDelete}
-      onConfirm={handleConfirmDelete}
-      title="Подтверждение удаления"
-      message="Вы уверены, что хотите удалить этот аккаунт?"
-        />
+        open={deleteDialogOpen} //  Отображается, если deleteDialogOpen === true
+        onClose={handleCancelDelete} //  Вызывается при закрытии диалога
+        onConfirm={handleConfirmDelete} //  Вызывается при подтверждении удаления
+        title="Подтверждение удаления" 
+        message="Вы уверены, что хотите удалить этот аккаунт?" 
+      />
+
+      {/* Блок с пагинацией, выбором количества аккаунтов на странице и кнопками навигации */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
+        {/* Выбор количества аккаунтов на странице */}
         <FormControl variant="filled" sx={{ width: 1/10 }} >
           <InputLabel id="rows-per-page-label">Аккаунтов на странице</InputLabel>
           <Select
             labelId="rows-per-page-label"
             id="rows-per-page"
-            value={accountsPerPage}
-            onChange={handleChangeRowsPerPage}
-            label="Аккаунтов на странице"
-
+            value={accountsPerPage} 
+            onChange={handleChangeRowsPerPage} 
+            label="Аккаунтов на странице" 
           >
             <MenuItem value={10}>10</MenuItem>
             <MenuItem value={25}>25</MenuItem>
@@ -129,22 +169,30 @@ const AccountList: React.FC = () => {
             <MenuItem value={100}>100</MenuItem>
           </Select>
         </FormControl>
-        <div >
-          <Container >
-          <Button component={Link} to="/" variant="contained" color="primary" >
-            Список аккаунтов
-          </Button>
-          <Button component={Link} to="/create" variant="contained" color="secondary" style={{ marginLeft: '10px' }}>
-            Создать аккаунт
-          </Button>
-          <Button component={Link} to="/trash" variant="contained" color="error" style={{ marginLeft: '10px' }}>
-            Удаленные аккаунты
-          </Button>
+
+        {/* Кнопки навигации */}
+        <div>
+          <Container>
+            <Button component={Link} to="/" variant="contained" color="primary" >
+              Список аккаунтов 
+            </Button>
+            <Button component={Link} to="/create" variant="contained" color="secondary" style={{ marginLeft: '10px' }}>
+              Создать аккаунт 
+            </Button>
+            <Button component={Link} to="/trash" variant="contained" color="error" style={{ marginLeft: '10px' }}>
+              Удаленные аккаунты 
+            </Button>
           </Container>
         </div>
-        <Pagination count={Math.ceil(totalAccounts / accountsPerPage)} page={currentPage} onChange={handleChangePage} variant="outlined" shape="rounded" showFirstButton showLastButton/>
+
+        {/* Пагинация */}
+        <Pagination 
+          count={Math.ceil(totalAccounts / accountsPerPage)} // Вычисляем количество страниц
+          page={currentPage} //  Текущая страница
+          onChange={handleChangePage} //  Обработчик изменения страницы
+          variant="outlined" shape="rounded" showFirstButton showLastButton 
+        />
       </div>
-      
     </>
   );
 };
