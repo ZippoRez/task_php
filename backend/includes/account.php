@@ -485,6 +485,21 @@ class Account
         }
     }
 
+    // Метод для получения всех аккаунтов в компании
+    public function getTotalAccountsByCompanyId($companyId) {
+        try {
+            $sql = "SELECT COUNT(*) FROM accounts WHERE company_id = :companyId";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':companyId', $companyId, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            $this->lastError = "Ошибка базы данных при получении количества аккаунтов компании: " . $e->getMessage();
+            $this->errorCode = $e->getCode();
+            return 0; //  Или другое значение по умолчанию в случае ошибки
+        }
+    }
+
     // Приватный метод для валидации данных аккаунта
     private function validateData($data)
     {

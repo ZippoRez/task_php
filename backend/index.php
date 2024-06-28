@@ -10,6 +10,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 require_once 'includes/database.php';
 require_once 'includes/account.php';
 
+
 // Устанавливаем уровень логирования ошибок
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
