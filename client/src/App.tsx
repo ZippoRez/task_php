@@ -1,41 +1,30 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom'; // Для маршрутизации
-import { AppBar, Toolbar, Typography, Container } from '@mui/material'; // Компоненты Material-UI
-import AccountList from './components/AccountList'; // Компонент списка аккаунтов
-import AccountCreate from './components/AccountCreate'; // Компонент создания аккаунта
-import AccountEdit from './components/AccountEdit'; // Компонент редактирования аккаунта
-import Trash from './components/Trash'; // Компонент корзины
+import { BrowserRouter, Routes, Route } from 'react-router-dom'; 
+import AccountList from './components/AccountList';
+import AccountCreate from './components/AccountCreate';
+import AccountEdit from './components/AccountEdit'; 
+import Trash from './components/Trash';
+import CompanyList from './components/CompanyList';
+import CompanyCreate from './components/CompanyCreate';
+import CompanyEdit from './components/CompanyEdit';
+import CompanyDetails from './components/CompanyDetails'; 
 
-// Главный компонент приложения
 const App: React.FC = () => {
   return (
-    // BrowserRouter для управления маршрутизацией
     <BrowserRouter>
-      {/* AppBar - шапка приложения */}
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6">
-            Управление аккаунтами 
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <Routes>
+        <Route path="/" element={<AccountList />} /> 
+        <Route path="/create" element={<AccountCreate />} />
+        <Route path="/edit/:id" element={<AccountEdit />} />
+        <Route path="/trash" element={<Trash />} />
 
-      {/* Контент приложения */}
-      <Container maxWidth="xl" style={{ marginTop: '20px' }}> 
-        {/* Routes для определения маршрутов */}
-        <Routes>
-          {/* Маршрут для главной страницы (список аккаунтов) */}
-          <Route path="/" element={<AccountList />} /> 
-          {/* Маршрут для страницы создания аккаунта */}
-          <Route path="/create" element={<AccountCreate />} />
-          {/* Маршрут для страницы редактирования аккаунта */}
-          <Route path="/edit/:id" element={<AccountEdit />} /> 
-          {/* Маршрут для страницы корзины (удаленные аккаунты) */}
-          <Route path="/trash" element={<Trash />} />
-        </Routes>
-      </Container>
+        <Route path="/companies" element={<CompanyList />} /> {/* Список компаний */}
+        <Route path="/companies/create" element={<CompanyCreate />} /> {/* Создание компании */}
+        <Route path="/companies/edit/:id" element={<CompanyEdit />} /> {/* Редактирование компании */}
+        <Route path="/companies/:id" element={<CompanyDetails />} /> {/* Информация о компании */}
+      </Routes>
     </BrowserRouter>
   );
 };
 
-export default App; 
+export default App;

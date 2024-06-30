@@ -1,92 +1,142 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; //  Для перенаправления после создания
-import { 
-  Button, Container, Typography, Grid 
-} from '@mui/material'; // Компоненты Material-UI
-import { Account } from '../types/Account'; // Тип данных Account
-import InputTextField from './InputTextField'; // Предположительно, компонент для текстового поля
-import config from '../config'; // Конфигурация приложения (API URL)
-import { Link } from 'react-router-dom'; //  Для ссылки на главную страницу
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  TextField, Button, Container, Typography, Grid, FormControl, InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions,
+  SelectChangeEvent,
+} from '@mui/material';
+import { Account } from '../types/Account';
+import InputTextField from './InputTextField';
+import config from '../config';
+import { Link } from 'react-router-dom';
 
-// Компонент для создания нового аккаунта
+interface Company {
+  id: number;
+  name: string;
+  address: string | null;
+}
+
 const AccountCreate: React.FC = () => {
-  // Хук для перенаправления
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
-  // Состояние для хранения данных формы 
   const [formData, setFormData] = useState<Account>({
-    id: 0, //  ID  устанавливается сервером
+    id: 0,
     first_name: '',
     last_name: '',
     email: '',
-    company_name: '',
     position: '',
     phone_1: '',
     phone_2: '',
     phone_3: '',
-    deleted_at: '', // Поле для "мягкого" удаления (скорее всего,  не нужно в форме создания) 
+    company_id: null,
+    deleted_at: '',
   });
 
-  // Состояние для хранения сообщения об ошибке
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [newCompanyAddress, setNewCompanyAddress] = useState('');
+  const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Обработчик изменения значений в полях формы
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await fetch(`${config.apiUrl}/companies.php`);
+        if (!response.ok) {
+          throw new Error('Ошибка при загрузке списка компаний');
+        }
+        const data = await response.json();
+        setCompanies(data.data);
+      } catch (err) {
+        setError('Ошибка при загрузке списка компаний');
+        console.error(err);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
-      ...formData, //  Копируем текущие данные
-      [event.target.name]: event.target.value, //  Обновляем значение поля
+      ...formData,
+      [event.target.name]: event.target.value,
     });
   };
 
-  // Обработчик отправки формы
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault(); //  Предотвращаем стандартную отправку формы
-    setError(null); //  Сбрасываем сообщение об ошибке
+  const handleCompanyChange = (event: SelectChangeEvent<number>) => {
+    const companyId = event.target.value !== '' ? Number(event.target.value) : null;
+    setFormData({ ...formData, company_id: companyId });
+  };
 
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    console.log(JSON.stringify(formData));
     try {
-      // Отправляем POST запрос на сервер
       const response = await fetch(`${config.apiUrl}/create.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData), // Отправляем данные формы в JSON 
+        body: JSON.stringify(formData),
       });
-
-      // Проверяем,  успешно ли выполнился запрос
+      
       if (!response.ok) {
-        // Если нет,  получаем данные об ошибке
         const errorData = await response.json();
-        // Генерируем исключение с сообщением об ошибке
-        throw new Error(errorData.error || 'Ошибка при создании аккаунта'); 
+        throw new Error(errorData.error || 'Ошибка при создании аккаунта');
       }
 
-      // Если запрос успешен,  перенаправляем на главную страницу
-      navigate('/'); 
+      navigate('/');
     } catch (err) {
-      // Обрабатываем исключения (ошибки сети или сервера)
-      setError((err as Error).message); 
+      setError((err as Error).message);
     }
   };
 
-  // JSX для отрисовки формы
+  const handleCreateCompany = async () => {
+    try {
+      const response = await fetch(`${config.apiUrl}/companies.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCompanyName,
+          address: newCompanyAddress,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка при создании компании');
+      }
+
+      const data = await response.json();
+      const newCompany: Company = {
+        id: data.data.id,
+        name: newCompanyName,
+        address: newCompanyAddress,
+      };
+
+      setCompanies([...companies, newCompany]);
+      setFormData({ ...formData, company_id: newCompany.id });
+      setNewCompanyName('');
+      setNewCompanyAddress('');
+      setShowCompanyDialog(false);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   return (
     <Container maxWidth="sm">
-      {/* Заголовок */}
       <Typography variant="h4" align="center" gutterBottom>
-        {/* Кнопка "Назад" */}
-        <Button component={Link} to="/" variant="contained" color="primary" sx={{float:'left'}}>
+        <Button component={Link} to="/" variant="contained" color="primary" sx={{ float: 'left' }}>
           ←
         </Button>
         Создать аккаунт
       </Typography>
 
-      {/* Вывод сообщения об ошибке,  если оно есть */}
       {error && (
         <Typography color="error" align="center" gutterBottom>
           {error}
         </Typography>
       )}
 
-      {/* Форма создания аккаунта */}
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           {/* Поля ввода (используется компонент InputTextField) */}
@@ -112,12 +162,6 @@ const AccountCreate: React.FC = () => {
             required 
           />
           <InputTextField 
-            label="Название компании" 
-            name="company_name" 
-            value={formData.company_name} 
-            onChange={handleChange}  
-          />
-          <InputTextField 
             label="Должность" 
             name="position" 
             value={formData.position} 
@@ -141,6 +185,33 @@ const AccountCreate: React.FC = () => {
             value={formData.phone_3} 
             onChange={handleChange}  
           />
+          
+          {/* Select для выбора компании */}
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel id="company-select-label">Компания</InputLabel>
+              <Select
+                labelId="company-select-label"
+                id="company-select"
+                name="company_id"
+                value={formData.company_id || ''}
+                onChange={handleCompanyChange}
+                label="Компания"
+              >
+                <MenuItem value="">
+                  <em>Выберите компанию</em>
+                </MenuItem>
+                {companies.map(company => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+                <MenuItem onClick={() => setShowCompanyDialog(true)}>
+                  Создать новую компанию
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
         </Grid>
 
         {/* Кнопка "Создать" */}
@@ -148,6 +219,38 @@ const AccountCreate: React.FC = () => {
           Создать
         </Button>
       </form>
+
+      {/* Диалог для создания новой компании */}
+      <Dialog open={showCompanyDialog} onClose={() => setShowCompanyDialog(false)}>
+        <DialogTitle>Создать новую компанию</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Название компании"
+            type="text"
+            fullWidth
+            value={newCompanyName}
+            onChange={(e) => setNewCompanyName(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            id="address"
+            label="Адрес"
+            type="text"
+            fullWidth
+            value={newCompanyAddress}
+            onChange={(e) => setNewCompanyAddress(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCompanyDialog(false)}>Отмена</Button>
+          <Button onClick={handleCreateCompany} color="primary">
+            Создать
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

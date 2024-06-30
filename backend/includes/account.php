@@ -1,47 +1,36 @@
 <?php
-// Подключаем файл с кодами ошибок
+// includes/account.php
+
 require_once 'error_codes.php';
-// Подключаем файл с вспомогательными функциями (предположительно, валидация)
 require_once '/var/www/site/task_php/backend/utils/helper.php';
 
-// Устанавливаем уровень логирования ошибок (настройте под свои нужды)
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/error.log');
 
-// Класс для работы с аккаунтами пользователей
 class Account
 {
-    // Подключение к базе данных
     private $db;
-
-    // Свойства аккаунта
     private $id;
     private $firstName;
     private $lastName;
     private $email;
-    private $companyName;
     private $position;
     private $phone1;
     private $phone2;
     private $phone3;
+    private $companyId; 
     private $deleted_at;
 
-    // Информация об ошибках
     private $lastError = "";
     private $errorCode;
 
-    /**
-     * Конструктор класса Account.
-     *
-     * @param PDO $db Подключение к базе данных.
-     */
     public function __construct($db)
     {
         $this->db = $db;
     }
 
-    // Геттеры для свойств класса
+    // Getters 
     public function getId()
     {
         return $this->id;
@@ -60,11 +49,6 @@ class Account
     public function getEmail()
     {
         return $this->email;
-    }
-
-    public function getCompanyName()
-    {
-        return $this->companyName;
     }
 
     public function getPosition()
@@ -87,6 +71,11 @@ class Account
         return $this->phone3;
     }
 
+    public function getCompanyId()
+    {
+        return $this->companyId;
+    }
+
     public function getDeleted_At()
     {
         return $this->deleted_at;
@@ -99,58 +88,58 @@ class Account
 
     public function getErrorCode()
     {
-        return $this->errorCode;
+        return $this->errorCode; 
     }
 
-    // Сеттеры для свойств класса
+    // Setters
     public function setId($id)
     {
-        $this->id = (int)$id;
+        $this->id = (int)$id; 
     }
 
     public function setFirstName($firstName)
     {
-        $this->firstName = $this->filterString($firstName);
+        $this->firstName = $this->filterString($firstName); 
     }
 
     public function setLastName($lastName)
     {
-        $this->lastName = $this->filterString($lastName);
+        $this->lastName = $this->filterString($lastName); 
     }
 
     public function setEmail($email)
     {
-        $this->email = $this->filterString($email);
+        $this->email = $this->filterString($email); 
     }
 
-    public function setCompanyName($companyName)
+    public function setCompanyId($companyId)
     {
-        $this->companyName = $this->filterString($companyName);
+        $this->companyId = (int)$companyId; 
     }
 
     public function setPosition($position)
     {
-        $this->position = (int)$position;
+        $this->position = (int)$position; 
     }
 
     public function setPhone1($phone1)
     {
-        $this->phone1 = $this->normalizePhoneNumber($phone1);
+        $this->phone1 = $this->normalizePhoneNumber($phone1); 
     }
 
     public function setPhone2($phone2)
     {
-        $this->phone2 = $this->normalizePhoneNumber($phone2);
+        $this->phone2 = $this->normalizePhoneNumber($phone2); 
     }
 
     public function setPhone3($phone3)
     {
-        $this->phone3 = $this->normalizePhoneNumber($phone3);
+        $this->phone3 = $this->normalizePhoneNumber($phone3); 
     }
 
     public function setDelete_At($deleted_at)
     {
-        $this->deleted_at = $this->filterString($deleted_at);
+        $this->deleted_at = $this->filterString($deleted_at); 
     }
 
     /**
@@ -181,53 +170,55 @@ class Account
     {
         try {
             // Валидация данных перед созданием
-            if (!!$this->validateData($data)) {
-                error_log("Ошибка валидации данных при создании аккаунта: " . $this->lastError);
-                return false;
-            }
-            
-            $account = new Account($this->db);
-            $account->setFirstName($data['first_name']);
-            $account->setLastName($data['last_name']);
-            $account->setEmail($data['email']);
-            $account->setCompanyName($data['company_name']);
-            $account->setPosition($data['position']);
-            $account->setPhone1($data['phone_1']);
-            $account->setPhone2($data['phone_2']);
-            $account->setPhone3($data['phone_3']);
+            if ($this->validateData($data)) {
+                $account = new Account($this->db); 
+                $account->setFirstName($data['first_name']);
+                $account->setLastName($data['last_name']);
+                $account->setEmail($data['email']);
+                $account->setCompanyId($data['company_id']);
+                $account->setPosition($data['position']);
+                $account->setPhone1($data['phone_1']); 
+                $account->setPhone2($data['phone_2']); 
+                $account->setPhone3($data['phone_3']);
+                $sql = "INSERT INTO accounts (first_name, last_name, email, position, phone_1, phone_2, phone_3, company_id)
+                        VALUES (:first_name, :last_name, :email, :position, :phone_1, :phone_2, :phone_3, :company_id)";
+                $stmt = $this->db->prepare($sql); 
 
-            // Подготовка SQL запроса на добавление данных
-            $sql = "INSERT INTO accounts (first_name, last_name, email, company_name, position, phone_1, phone_2, phone_3)
-                    VALUES (:first_name, :last_name, :email, :company_name, :position, :phone_1, :phone_2, :phone_3)";
-            $stmt = $this->db->prepare($sql);
+                $stmt->bindValue(':first_name',  $account->getFirstName(),  PDO::PARAM_STR); 
+                $stmt->bindValue(':last_name',  $account->getLastName(),  PDO::PARAM_STR); 
+                $stmt->bindValue(':email',  $account->getEmail(),  PDO::PARAM_STR);
+                $stmt->bindValue(':position',  $account->getPosition(),  PDO::PARAM_INT);
+                $stmt->bindValue(':phone_1',  $account->getPhone1(),  PDO::PARAM_STR); 
+                $stmt->bindValue(':phone_2',  $account->getPhone2(),  PDO::PARAM_STR); 
+                $stmt->bindValue(':phone_3',  $account->getPhone3(),  PDO::PARAM_STR); 
+                if ($account->getCompanyId() === 0) { 
+                    $stmt->bindValue(':company_id', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':company_id', $account->getCompanyId(), PDO::PARAM_INT); 
+                }
+                // $stmt->bindValue(':company_id', $account->getCompanyId(), PDO::PARAM_INT);
 
-            // Связывание параметров, используя геттеры:
-            $stmt->bindValue(':first_name', $account->getFirstName(), PDO::PARAM_STR);
-            $stmt->bindValue(':last_name', $account->getLastName(), PDO::PARAM_STR);
-            $stmt->bindValue(':email', $account->getEmail(), PDO::PARAM_STR);
-            $stmt->bindValue(':company_name', $account->getCompanyName(), PDO::PARAM_STR);
-            $stmt->bindValue(':position', $account->getPosition(), PDO::PARAM_INT);
-            $stmt->bindValue(':phone_1', $account->getPhone1(), PDO::PARAM_STR);
-            $stmt->bindValue(':phone_2', $account->getPhone2(), PDO::PARAM_STR);
-            $stmt->bindValue(':phone_3', $account->getPhone3(), PDO::PARAM_STR);
+                $result = $stmt->execute();
 
-            // Выполнение запроса
-            $result = $stmt->execute();
+                if ($result) {
+                    $this->id = $this->db->lastInsertId();
+                    return true; 
+                } else {
+                    $this->lastError = "Ошибка при выполнении запроса на создание аккаунта.";
+                    error_log($this->lastError . ": " . json_encode($stmt->errorInfo()));
+                    return false;
+                }
 
-            if ($result) {
-                $this->id = $this->db->lastInsertId();
-                return true;
             } else {
-                $this->lastError = "Ошибка при выполнении запроса на создание аккаунта.";
-                error_log($this->lastError . ": " . json_encode($stmt->errorInfo()));
-                return false;
+                error_log("Ошибка валидации данных при создании аккаунта: " . $this->lastError);
+                return false; 
             }
 
         } catch (PDOException $e) {
             $this->lastError = "Ошибка базы данных при создании аккаунта: " . $e->getMessage();
             $this->errorCode = $e->getCode();
             error_log($this->lastError);
-            return false;
+            return false; 
         }
     }
 
@@ -254,7 +245,7 @@ class Account
                 $this->setFirstName($row['first_name']);
                 $this->setLastName($row['last_name']);
                 $this->setEmail($row['email']);
-                $this->setCompanyName($row['company_name']);
+                $this->setCompanyId($row['company_id']);
                 $this->setPosition($row['position']);
                 $this->setPhone1($row['phone_1']);
                 $this->setPhone2($row['phone_2']);
@@ -295,7 +286,7 @@ class Account
                 $account->setFirstName($row['first_name']);
                 $account->setLastName($row['last_name']);
                 $account->setEmail($row['email']);
-                $account->setCompanyName($row['company_name']);
+                $account->setCompanyId($row['company_id']);
                 $account->setPosition($row['position']);
                 $account->setPhone1($row['phone_1']);
                 $account->setPhone2($row['phone_2']);
@@ -333,7 +324,7 @@ class Account
             $this->setFirstName($data['first_name']);
             $this->setLastName($data['last_name']);
             $this->setEmail($data['email']);
-            $this->setCompanyName($data['company_name']);
+            $this->setCompanyId($data['company_id']);
             $this->setPosition($data['position']);
             $this->setPhone1($data['phone_1']);
             $this->setPhone2($data['phone_2']);
@@ -344,7 +335,7 @@ class Account
                         first_name = :first_name,
                         last_name = :last_name,
                         email = :email,
-                        company_name = :company_name,
+                        company_id = :company_id,
                         position = :position,
                         phone_1 = :phone_1,
                         phone_2 = :phone_2,
@@ -356,7 +347,7 @@ class Account
             $stmt->bindValue(':first_name', $this->getFirstName(), PDO::PARAM_STR);
             $stmt->bindValue(':last_name', $this->getLastName(), PDO::PARAM_STR);
             $stmt->bindValue(':email', $this->getEmail(), PDO::PARAM_STR);
-            $stmt->bindValue(':company_name', $this->getCompanyName(), PDO::PARAM_STR);
+            $stmt->bindValue(':company_id', $this->getCompanyId(), PDO::PARAM_STR);
             $stmt->bindValue(':position', $this->getPosition(), PDO::PARAM_INT);
             $stmt->bindValue(':phone_1', $this->getPhone1(), PDO::PARAM_STR);
             $stmt->bindValue(':phone_2', $this->getPhone2(), PDO::PARAM_STR);
@@ -431,12 +422,20 @@ class Account
     }
 
     // Метод для получения списка аккаунтов с пагинацией
-    public function getAccounts($page, $limit)
+    public function getAccounts($page, $limit, $deleted = false)
     {
         $offset = ($page - 1) * $limit;
         try {
             // Подготовка SQL запроса на получение аккаунтов с учетом пагинации
-            $sql = "SELECT * FROM accounts WHERE deleted_at IS NULL LIMIT :limit OFFSET :offset";
+            $sql = "SELECT * FROM accounts";
+            
+            if ($deleted) {
+                $sql .= " WHERE deleted_at IS NOT NULL";
+            } else {
+                $sql .= " WHERE deleted_at IS NULL";
+            }
+
+            $sql .= " LIMIT :limit OFFSET :offset";
 
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
@@ -452,7 +451,7 @@ class Account
                 $account->setFirstName($row['first_name']);
                 $account->setLastName($row['last_name']);
                 $account->setEmail($row['email']);
-                $account->setCompanyName($row['company_name']);
+                $account->setCompanyId($row['company_id']);
                 $account->setPosition($row['position']);
                 $account->setPhone1($row['phone_1']);
                 $account->setPhone2($row['phone_2']);
@@ -474,7 +473,7 @@ class Account
     {
         try {
             // Подготовка SQL запроса для получения количества аккаунтов
-            $sql = "SELECT COUNT(*) FROM accounts";
+            $sql = "SELECT COUNT(*) FROM accounts WHERE deleted_at IS NULL";
             $stmt = $this->db->query($sql);
             return $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -484,20 +483,14 @@ class Account
             return 0;
         }
     }
-
-    // Метод для получения всех аккаунтов в компании
-    public function getTotalAccountsByCompanyId($companyId) {
-        try {
-            $sql = "SELECT COUNT(*) FROM accounts WHERE company_id = :companyId";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':companyId', $companyId, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            $this->lastError = "Ошибка базы данных при получении количества аккаунтов компании: " . $e->getMessage();
-            $this->errorCode = $e->getCode();
-            return 0; //  Или другое значение по умолчанию в случае ошибки
+    
+    // Метод для получения объекта Company, связанного с аккаунтом
+    public function getCompany(): ?Company {
+        if ($this->companyId !== null) {
+            $company = new Company($this->db);
+            return $company->getCompanyById($this->companyId);
         }
+        return null; 
     }
 
     // Приватный метод для валидации данных аккаунта
@@ -643,7 +636,7 @@ class Account
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'email' => $this->email,
-            'company_name' => $this->companyName,
+            'company_id' => $this->companyId, 
             'position' => $this->position,
             'phone_1' => $this->phone1,
             'phone_2' => $this->phone2,

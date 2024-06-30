@@ -29,11 +29,11 @@ const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete, onResto
           <TableCell>Имя</TableCell>
           <TableCell>Фамилия</TableCell>
           <TableCell>Email</TableCell>
-          <TableCell>Компания</TableCell>
           <TableCell>Должность</TableCell>
           <TableCell>Телефон 1</TableCell>
           <TableCell>Телефон 2</TableCell>
           <TableCell>Телефон 3</TableCell>
+          <TableCell>Компания</TableCell>
           <TableCell>Действия</TableCell>
         </TableRow>
       </TableHead>

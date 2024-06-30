@@ -197,7 +197,7 @@ const Trash: React.FC = () => {
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
         title="Подтверждение удаления" 
-        message="Вы уверены, что хотите удалить этот аккаунт?" 
+        message="Вы уверены, что хотите удалить этот аккаунт НАВСЕГДА?" 
       />
     </>
   );

@@ -12,7 +12,6 @@ class Company {
     private $lastError = "";
     private $errorCode = 0;
 
-    // Конструктор
     public function __construct($db) {
         $this->db = $db;
     }
@@ -45,7 +44,7 @@ class Company {
                 ':name' => $data['name'],
                 ':address' => $data['address'] ?? null,
             ]);
-            $this->setId($this->db->lastInsertId()); //  Используем сеттер
+            $this->setId($this->db->lastInsertId()); 
             return true;
         } catch (PDOException $e) {
             $this->lastError = "Ошибка базы данных при создании компании: " . $e->getMessage();
@@ -63,13 +62,13 @@ class Company {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($row) {
-                $this->setId($row['id']);        //  Используем сеттер
-                $this->setName($row['name']);      //  Используем сеттер
-                $this->setAddress($row['address']); //  Используем сеттер
-                return $this; 
+                $this->setId($row['id']); 
+                $this->setName($row['name']); 
+                $this->setAddress($row['address']); 
+                return $this; // Возвращаем объект Company
             } else {
                 $this->lastError = "Компания не найдена.";
-                $this->errorCode = ERROR_ACCOUNT_NOT_FOUND; 
+                $this->errorCode = ERROR_ACCOUNT_NOT_FOUND; // Можно использовать тот же код, что и для аккаунта
                 return false;
             }
         } catch (PDOException $e) {
@@ -92,9 +91,9 @@ class Company {
             $companies = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $company = new Company($this->db);
-                $company->setId($row['id']);        //  Используем сеттер
-                $company->setName($row['name']);      //  Используем сеттер
-                $company->setAddress($row['address']); //  Используем сеттер
+                $company->setId($row['id']);
+                $company->setName($row['name']); 
+                $company->setAddress($row['address']); 
                 $companies[] = $company;
             }
             return $companies;
@@ -105,19 +104,6 @@ class Company {
         }
     }
 
-    // Метод для получения всех компаний
-    public function getTotalCompanies() {
-        try {
-            $sql = "SELECT COUNT(*) FROM companies"; 
-            $stmt = $this->db->query($sql); 
-            return $stmt->fetchColumn(); 
-        } catch (PDOException $e) {
-            $this->lastError = "Ошибка базы данных при получении общего количества компаний: " . $e->getMessage();
-            $this->errorCode = $e->getCode();
-            return 0; //  Или другое значение по умолчанию в случае ошибки
-        }
-    }
-    
 
     // Метод для обновления компании
     public function updateCompany($data) {
@@ -172,14 +158,50 @@ class Company {
             $accounts = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $account = new Account($this->db);
-                // ... (заполнение свойств объекта Account из $row) ...
-                $accounts[] = $account;
+                $account->setId($row['id']);
+                $account->setFirstName($row['first_name']); 
+                $account->setLastName($row['last_name']); 
+                $account->setEmail($row['email']);
+                $account->setCompanyId($row['company_id']); 
+                $account->setPosition($row['position']);
+                $account->setPhone1($row['phone_1']); 
+                $account->setPhone2($row['phone_2']); 
+                $account->setPhone3($row['phone_3']); 
+                $accounts[] = $account; 
             }
-            return $accounts; 
+            return $accounts;
         } catch (PDOException $e) {
             $this->lastError = "Ошибка базы данных при получении списка сотрудников: " . $e->getMessage();
             $this->errorCode = $e->getCode();
             return false; 
+        }
+    }
+
+    // Метод для получения общего количества компаний
+    public function getTotalCompanies() {
+        try {
+            $sql = "SELECT COUNT(*) FROM companies";
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            $this->lastError = "Ошибка базы данных при получении общего количества компаний: " . $e->getMessage();
+            $this->errorCode = $e->getCode();
+            return 0; 
+        }
+    }
+
+    // Метод для получения количества аккаунтов,  привязанных к компании
+    public function getTotalAccountsByCompanyId($companyId) {
+        try {
+            $sql = "SELECT COUNT(*) FROM accounts WHERE company_id = :companyId"; 
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':companyId', $companyId, PDO::PARAM_INT); 
+            $stmt->execute();
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            $this->lastError = "Ошибка базы данных при получении количества аккаунтов компании: " . $e->getMessage();
+            $this->errorCode = $e->getCode();
+            return 0;
         }
     }
 

@@ -29,28 +29,32 @@ $accountObj = new Account($db->getConnection());
 
 // Получение ID аккаунта из URL
 $accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-// Проверка, передан ли ID аккаунта
-if ($accountId <= 0) {
-    http_response_code(400); // Bad Request
-    echo json_encode(['success' => false, 'error' => 'Неверный ID аккаунта']);
-    exit;
-}
-
-// Получаем данные аккаунта по ID
-if (!$accountObj->getAccountById($accountId)) {
-    http_response_code(404); // Not Found
-    echo json_encode([
-        'success' => false,
-        'error' => 'Аккаунт не найден',
-        'errorCode' => ERROR_ACCOUNT_NOT_FOUND
-    ]);
-    exit;
-}
+    echo json_encode(['success' => false, 'error' => $accountId]);
 
 // Обработка PUT-запроса (обновление данных аккаунта)
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     // Получение данных для обновления из тела запроса (JSON)
+
+    $accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    echo json_encode(['success' => false, 'error' => $accountId]);
+    // Проверка, передан ли ID аккаунта
+    if ($accountId <= 0) {
+        http_response_code(400); // Bad Request
+        echo json_encode(['success' => false, 'error' => $accountId]);
+        exit;
+    }
+
+    // Получаем данные аккаунта по ID
+    if (!$accountObj->getAccountById($accountId)) {
+        http_response_code(404); // Not Found
+        echo json_encode([
+            'success' => false,
+            'error' => 'Аккаунт не найден',
+            'errorCode' => ERROR_ACCOUNT_NOT_FOUND
+        ]);
+        exit;
+    }
+
     $updateData = json_decode(file_get_contents('php://input'), true);
 
     // Проверка на корректность данных JSON

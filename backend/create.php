@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json'); // Устанавливаем заголовок для JSON
 header('Access-Control-Allow-Origin: http://localhost:3000'); // Разрешить запросы с этого источника
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE'); // Разрешить эти HTTP-методы 
+header('Access-Control-Allow-Methods: POST, OPTIONS'); // Разрешить эти HTTP-методы 
 header('Access-Control-Allow-Headers: Content-Type'); // Разрешить этот заголовок
 require_once 'includes/database.php';
 require_once 'includes/account.php';
@@ -21,11 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 } 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Получение JSON-данных из тела запроса
     $data = json_decode(file_get_contents('php://input'), true); 
     $data = sanitizeInput($data);
-
-    // Создание аккаунта
     if ($account->createAccount($data)) {
         // Успешное создание аккаунта
         http_response_code(201); // Created

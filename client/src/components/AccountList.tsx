@@ -176,6 +176,9 @@ const AccountList: React.FC = () => {
             <Button component={Link} to="/" variant="contained" color="primary" >
               Список аккаунтов 
             </Button>
+            <Button component={Link} to="/companies" variant="contained" color="primary" style={{ marginLeft: '10px' }}>
+              Список компаний
+            </Button>
             <Button component={Link} to="/create" variant="contained" color="secondary" style={{ marginLeft: '10px' }}>
               Создать аккаунт 
             </Button>

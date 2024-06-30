@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, Button, Typography, Pagination, Select, MenuItem, FormControl, InputLabel,
-  SelectChangeEvent
+  SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import config from '../config';
 
@@ -22,6 +22,10 @@ const CompanyList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [companiesPerPage, setCompaniesPerPage] = useState(10);
   const [totalCompanies, setTotalCompanies] = useState(0);
+
+  // Состояние для диалога подтверждения удаления
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [companyIdToDelete, setCompanyIdToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,6 +47,40 @@ const CompanyList: React.FC = () => {
 
     fetchData();
   }, [currentPage, companiesPerPage]);
+
+  const handleDelete = (id: number) => {
+    setCompanyIdToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteDialogOpen(false);
+
+    if (companyIdToDelete !== null) {
+      try {
+        const response = await fetch(`${config.apiUrl}/company.php?id=${companyIdToDelete}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка при удалении компании');
+        }
+
+        // Обновляем список компаний
+        setCompanies(companies.filter(company => company.id !== companyIdToDelete)); 
+      } catch (err) {
+        setError('Ошибка при удалении компании');
+        console.error(err);
+      } finally {
+        setCompanyIdToDelete(null);
+      }
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setCompanyIdToDelete(null);
+  };
 
   const handleChangePage = (event: React.ChangeEvent<unknown>, newPage: number) => {
     setCurrentPage(newPage);
@@ -86,7 +124,7 @@ const CompanyList: React.FC = () => {
                   <Button component={Link} to={`/companies/edit/${company.id}`}>
                     Редактировать
                   </Button>
-                  <Button color="error">
+                  <Button onClick={() => handleDelete(company.id)} color="error">
                     Удалить
                   </Button>
                 </TableCell>
@@ -97,7 +135,7 @@ const CompanyList: React.FC = () => {
       </TableContainer>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
-        <FormControl variant="standard" sx={{ minWidth: 120 }}>
+        <FormControl variant="filled" sx={{ width: 1/10 }}>
           <InputLabel id="companies-per-page-label">Компаний на странице</InputLabel>
           <Select
             labelId="companies-per-page-label"
@@ -111,13 +149,32 @@ const CompanyList: React.FC = () => {
             <MenuItem value="50">50</MenuItem>
           </Select>
         </FormControl>
-        <Pagination count={Math.ceil(totalCompanies / companiesPerPage)} page={currentPage} onChange={handleChangePage} />
-      </div>
-      <div style={{ marginTop: '20px' }}>
-        <Button component={Link} to="/companies/create" variant="contained" color="secondary">
+        <div style={{ marginTop: '20px' }}>
+        <Button component={Link} to="/" variant="contained" color="primary" style={{ marginLeft: '10px' }}>
+            Список аккаунтов
+          </Button>
+        <Button component={Link} to="/companies/create" variant="contained" color="secondary" style={{ marginLeft: '10px' }}>
           Создать компанию
         </Button>
       </div>
+        <Pagination count={Math.ceil(totalCompanies / companiesPerPage)} page={currentPage} onChange={handleChangePage} />
+        
+      </div>
+      
+
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>Вы уверены, что хотите удалить эту компанию?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete}>Отмена</Button>
+          <Button onClick={handleConfirmDelete} color="error">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

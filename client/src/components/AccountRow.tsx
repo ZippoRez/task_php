@@ -1,71 +1,103 @@
-import React from 'react';
-import { Link } from 'react-router-dom'; //  Для создания ссылки на редактирование
-import { TableRow, TableCell, Button, Typography } from '@mui/material'; //  Компоненты Material-UI
-import { Account } from '../types/Account'; //  Тип данных Account
-import { differenceInSeconds, formatDistanceToNow } from 'date-fns'; //  Для работы с датами
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { TableRow, TableCell, Button, Typography } from '@mui/material';
+import { Account } from '../types/Account';
+import { formatDistanceToNow, differenceInSeconds } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import config from '../config'; 
 
-//  Интерфейс свойств компонента AccountRow
 interface AccountRowProps {
-  account: Account; //  Данные аккаунта
-  onDelete: (id: number) => void; //  Функция,  вызываемая при нажатии на кнопку "Удалить"
-  onRestore?: (id: number) => void; //  Функция,  вызываемая при нажатии на кнопку "Восстановить" (необязательная)
+  account: Account;
+  onDelete: (id: number) => void;
+  onRestore?: (id: number) => void;
 }
 
-const AccountRow: React.FC<AccountRowProps> = ({ account, onDelete, onRestore }) => {
-  //  Вычисляем время,  оставшееся до окончательного удаления аккаунта (1 час после deleted_at)
-  const timeUntilDeletion = account.deleted_at 
-    ? 1 * 60 * 60 - differenceInSeconds(new Date(), new Date(account.deleted_at)) 
+const AccountRow: React.FC<AccountRowProps> = ({
+  account,
+  onDelete,
+  onRestore,
+}) => {
+  const timeUntilDeletion = account.deleted_at
+    ? 72 * 60 * 60 -
+      differenceInSeconds(new Date(), new Date(account.deleted_at))
     : null;
 
-  //  JSX для отрисовки строки таблицы
+  const [companyName, setCompanyName] = useState('');
+
+  useEffect(() => {
+    const fetchCompanyName = async () => {
+      if (account.company_id) {
+        try {
+          const response = await fetch(`${config.apiUrl}/company.php?id=${account.company_id}`);
+          if (!response.ok) {
+            throw new Error('Ошибка при загрузке данных компании');
+          }
+          const data = await response.json();
+          setCompanyName(data.data.name);
+        } catch (err) {
+          console.error('Ошибка при получении названия компании:', err);
+        }
+      }
+    };
+
+    fetchCompanyName();
+  }, [account.company_id]);
+  // console.log(account);
   return (
     <TableRow key={account.id}>
-      {/*  Ячейка для информации об удалении */}
+      {account.deleted_at && onRestore && (
       <TableCell>
-        {account.deleted_at && ( //  Отображаем информацию,  только если аккаунт удален
-          <Typography variant="caption" color="textSecondary"> 
-            {/*  Отображаем,  когда аккаунт был удален */}
-            Удалено {formatDistanceToNow(new Date(account.deleted_at), { addSuffix: true })} 
-            {/*  Отображаем время,  оставшееся до окончательного удаления, если оно есть */}
-            {timeUntilDeletion !== null && timeUntilDeletion > 0 && ( 
-              <span>, остаётся: {formatDistanceToNow(new Date(Date.now() + timeUntilDeletion * 1000))}</span> 
+          <Typography variant="caption" color="textSecondary">
+            Удалено{' '}
+            {formatDistanceToNow(new Date(account.deleted_at), {
+              addSuffix: true,
+              locale: ru,
+            })}
+            {timeUntilDeletion !== null && timeUntilDeletion > 0 && (
+              <span>
+                , остаётся:{' '}
+                {formatDistanceToNow(new Date(Date.now() + timeUntilDeletion * 1000), { locale: ru })}
+              </span>
             )}
           </Typography>
-        )}
       </TableCell>
-
-      {/*  Остальные ячейки с данными аккаунта */}
+      )}
       <TableCell>{account.id}</TableCell>
       <TableCell>{account.first_name}</TableCell>
       <TableCell>{account.last_name}</TableCell>
       <TableCell>{account.email}</TableCell>
-      <TableCell>{account.company_name}</TableCell>
       <TableCell>{account.position}</TableCell>
       <TableCell>{account.phone_1}</TableCell>
       <TableCell>{account.phone_2}</TableCell>
       <TableCell>{account.phone_3}</TableCell>
-
-      {/*  Ячейка с кнопками действий */}
       <TableCell>
-        {/*  Кнопка "Редактировать",  отображается только для неудаленных аккаунтов */}
-        {!account.deleted_at && ( 
-          <Button component={Link} to={`/edit/${account.id}`}>
-            Редактировать
-          </Button>
+        {account.company_id ? (
+          <Link to={`/companies/${account.company_id}`}>
+            {companyName}
+          </Link>
+        ) : (
+          '-'
+        )}
+      </TableCell>
+      <TableCell>
+        {!account.deleted_at && (
+          <>
+            <Button component={Link} to={`/edit/${account.id}`}>
+              Редактировать
+            </Button>
+          </>
         )}
 
-        {/*  Кнопка "Восстановить",  отображается только для удаленных аккаунтов,  
-            если передана функция onRestore  */}
-        {onRestore && account.deleted_at && ( 
+        {account.deleted_at && onRestore && (
           <Button onClick={() => onRestore(account.id)} color="success">
             Восстановить
           </Button>
         )}
-
-        {/*  Кнопка "Удалить"  */}
+        
         <Button onClick={() => onDelete(account.id)} color="error">
           Удалить
         </Button>
+
       </TableCell>
     </TableRow>
   );

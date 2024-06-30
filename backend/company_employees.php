@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             throw new Exception($companyObj->getError()); 
         }
 
-        $totalEmployees = $accountObj->getTotalAccountsByCompanyId($companyId); 
+        $totalEmployees = $companyObj->getTotalAccountsByCompanyId($companyId); 
         $totalPages = ceil($totalEmployees / $limit);
 
         $response = [

@@ -1,22 +1,21 @@
-// AccountForm.tsx
-
 import React from 'react';
-import { Button, Grid } from '@mui/material';
-import { Account } from '../types/Account'; 
+import { Button, Grid, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Account } from '../types/Account';
 import InputTextField from './InputTextField';
-
+import { SelectChangeEvent } from '@mui/material';
+import { Company } from '../types/Company'; 
 // Интерфейс для свойств компонента AccountForm
 interface AccountFormProps {
-  formData: Account; // Данные аккаунта (для заполнения полей формы)
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void; // Обработчик изменения значения в поле формы
-  onSubmit: (event: React.FormEvent) => void; // Обработчик отправки формы
+  formData: Account; 
+  companies: Company[];  
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void; 
+  onSubmit: (event: React.FormEvent) => void; 
+  onCompanyChange: (event: SelectChangeEvent<number>) => void; 
 }
 
 // Компонент AccountForm - форма для редактирования/создания аккаунта
-const AccountForm: React.FC<AccountFormProps> = ({ formData, onChange, onSubmit }) => (
-  // Форма 
+const AccountForm: React.FC<AccountFormProps> = ({ formData, companies, onChange, onSubmit, onCompanyChange }) => (
   <form onSubmit={onSubmit}>
-    {/* Grid для организации полей формы */}
     <Grid container spacing={2}>
       {/* Поле "Имя" */}
       <InputTextField
@@ -46,12 +45,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ formData, onChange, onSubmit 
       />
 
       {/* Поле "Название компании" */}
-      <InputTextField
-        label="Название компании"
-        name="company_name"
-        value={formData.company_name || ''} // Если company_name пустое, устанавливаем пустую строку
-        onChange={onChange}
-      />
 
       {/* Поле "Должность" */}
       <InputTextField
@@ -84,13 +77,32 @@ const AccountForm: React.FC<AccountFormProps> = ({ formData, onChange, onSubmit 
         value={formData.phone_3 || ''} // Если phone_3 пустое, устанавливаем пустую строку
         onChange={onChange}
       />
+      {/* Select для выбора компании */}
+      <Grid item xs={12}>
+        <FormControl fullWidth>
+          <InputLabel id="company-select-label">Компания</InputLabel>
+          <Select
+            labelId="company-select-label"
+            id="company-select"
+            name="company_id" 
+            value={formData.company_id || ''} 
+            onChange={onCompanyChange}
+            label="Компания"
+          >
+            {companies.map((company) => (
+              <MenuItem key={company.id} value={company.id.toString()}>
+                {company.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Grid>
     </Grid>
 
-    {/* Кнопка "Сохранить" для отправки формы */}
     <Button type="submit" variant="contained" color="primary" fullWidth style={{ marginTop: '20px' }}>
       Сохранить
     </Button>
   </form>
 );
 
-export default AccountForm; 
+export default AccountForm;
