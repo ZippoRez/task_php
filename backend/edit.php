@@ -8,8 +8,10 @@ require_once 'includes/account.php';
 require_once 'includes/error_codes.php';
 
 // Настраиваем CORS
+// Разрешаем запросы только с этого источника
 header("Access-Control-Allow-Origin: http://localhost:3000");
-header("Access-Control-Allow-Methods: PUT, OPTIONS"); // Разрешаем только PUT и OPTIONS 
+// Разрешаем только PUT и OPTIONS методы
+header("Access-Control-Allow-Methods: PUT, OPTIONS"); 
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 // Устанавливаем уровень логирования ошибок
@@ -29,23 +31,21 @@ $accountObj = new Account($db->getConnection());
 
 // Получение ID аккаунта из URL
 $accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-    echo json_encode(['success' => false, 'error' => $accountId]);
 
 // Обработка PUT-запроса (обновление данных аккаунта)
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
-    // Получение данных для обновления из тела запроса (JSON)
-
-    $accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-    echo json_encode(['success' => false, 'error' => $accountId]);
+    
     // Проверка, передан ли ID аккаунта
     if ($accountId <= 0) {
+        // Возвращаем ошибку, если ID не передан или некорректный
         http_response_code(400); // Bad Request
-        echo json_encode(['success' => false, 'error' => $accountId]);
+        echo json_encode(['success' => false, 'error' => 'Неверный ID аккаунта']);
         exit;
     }
 
     // Получаем данные аккаунта по ID
     if (!$accountObj->getAccountById($accountId)) {
+        // Возвращаем ошибку, если аккаунт не найден
         http_response_code(404); // Not Found
         echo json_encode([
             'success' => false,
@@ -55,10 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         exit;
     }
 
+    // Получение данных для обновления из тела запроса (JSON)
     $updateData = json_decode(file_get_contents('php://input'), true);
 
     // Проверка на корректность данных JSON
     if (json_last_error() !== JSON_ERROR_NONE) { 
+        // Возвращаем ошибку, если JSON некорректный
         http_response_code(400); // Bad Request
         echo json_encode(['success' => false, 'error' => 'Некорректные данные JSON в теле запроса']);
         exit;
@@ -67,14 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     // Фильтрация данных перед обновлением (защита от XSS)
     $filteredData = [];
     foreach ($updateData as $key => $value) {
+        // Используем метод filterString объекта $accountObj для фильтрации каждого значения
         $filteredData[$key] = $accountObj->filterString($value); 
     }
 
     // Объединение данных аккаунта с отфильтрованными данными для обновления
+    // Получаем текущие данные аккаунта и объединяем их с новыми данными
     $data = array_merge($accountObj->toArray(), $filteredData); 
 
     // Обновление данных аккаунта
     if ($accountObj->updateAccount($data)) {
+        // Возвращаем успешный ответ, если обновление прошло успешно
         http_response_code(200); // OK
         echo json_encode([
             'success' => true,
@@ -83,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     } else {
         // Логируем ошибку обновления
         error_log("Ошибка при обновлении аккаунта (ID: $accountId): " . $accountObj->getError());
-
+        // Возвращаем ошибку, если при обновлении произошла ошибка
         http_response_code(500); // Internal Server Error
         echo json_encode([
             'success' => false,
@@ -91,8 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             'errorCode' => $accountObj->getErrorCode()
         ]);
     }
+// Обработка других HTTP-методов (не PUT и не OPTIONS)
 } else {
-    // Обработка других HTTP-методов (не PUT и не OPTIONS)
+    // Возвращаем ошибку, если используется неподдерживаемый метод
     http_response_code(405); // Method Not Allowed
     echo json_encode(['success' => false, 'error' => 'Метод не разрешен. Используйте PUT']);
 }

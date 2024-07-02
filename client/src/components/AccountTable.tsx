@@ -2,29 +2,31 @@ import React from 'react';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper 
-} from '@mui/material'; //  Компоненты Material-UI
-import AccountRow from './AccountRow'; //  Компонент строки таблицы
-import { Account } from '../types/Account'; //  Тип данных Account
+} from '@mui/material'; // Импортируем компоненты Material-UI для таблицы
+import AccountRow from './AccountRow'; // Импортируем компонент строки таблицы
+import { Account } from '../types/Account'; // Импортируем тип данных Account
 
-//  Интерфейс свойств компонента AccountTable
+// Интерфейс свойств для компонента AccountTable
 interface AccountTableProps {
-  accounts: Account[]; //  Массив аккаунтов для отображения в таблице
-  onDelete: (id: number) => void; //  Функция,  вызываемая при нажатии на кнопку "Удалить" в строке
-  onRestore?: (id: number) => void; //  Функция,  вызываемая при нажатии на кнопку "Восстановить" (необязательная)
+  accounts: Account[]; // Массив аккаунтов для отображения
+  onDelete: (id: number) => void; // Функция для удаления аккаунта
+  onRestore?: (id: number) => void; // Функция для восстановления аккаунта (необязательная)
 }
 
+// Компонент AccountTable для отображения таблицы аккаунтов
 const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete, onRestore }) => (
-  //  Контейнер таблицы с использованием Paper для стилизации
+  // Контейнер таблицы с использованием Paper для стилизации
   <TableContainer component={Paper} sx={{ width: '100%' }}> 
-    {/*  Таблица  */}
+    {/* Таблица */}
     <Table size="medium">
-      {/*  Заголовок таблицы */}
+      {/* Заголовок таблицы */}
       <TableHead>
         <TableRow>
-          {/*  Добавляем пустую ячейку в заголовок, если есть функция onRestore  */}
+          {/* Добавляем пустую ячейку в заголовок, если есть функция onRestore (для кнопки "Восстановить") */}
           {onRestore &&  
             <TableCell></TableCell> 
           }
+          {/* Ячейки заголовка */}
           <TableCell>ID</TableCell>
           <TableCell>Имя</TableCell>
           <TableCell>Фамилия</TableCell>
@@ -38,15 +40,16 @@ const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete, onResto
         </TableRow>
       </TableHead>
 
-      {/*  Тело таблицы */}
+      {/* Тело таблицы */}
       <TableBody>
-        {/*  Отображаем строки таблицы для каждого аккаунта */}
+        {/* Отображение строк таблицы для каждого аккаунта */}
         {accounts.map(account => ( 
+          // Компонент AccountRow для каждой строки
           <AccountRow 
-            key={account.id} //  Уникальный ключ для каждой строки
-            account={account} //  Передаем данные аккаунта в строку
-            onDelete={onDelete} //  Передаем функцию onDelete в строку
-            onRestore={onRestore} //  Передаем функцию onRestore в строку, если она есть
+            key={account.id} // Уникальный ключ для каждой строки
+            account={account} // Передаем данные аккаунта в AccountRow
+            onDelete={onDelete} // Передаем функцию удаления в AccountRow
+            onRestore={onRestore} // Передаем функцию восстановления в AccountRow (если она есть)
           /> 
         ))}
       </TableBody>
@@ -54,4 +57,4 @@ const AccountTable: React.FC<AccountTableProps> = ({ accounts, onDelete, onResto
   </TableContainer>
 );
 
-export default AccountTable; 
+export default AccountTable;

@@ -5,6 +5,7 @@ define('ERROR_EMPTY_FIELDS', 101);       // Обязательные поля н
 define('ERROR_INVALID_EMAIL', 102);      // Неверный формат email
 define('ERROR_EMAIL_EXISTS', 103);       // Email уже существует
 define('ERROR_INVALID_PHONE', 104);      // Неверный формат телефона 
+define('ERROR_COMPANY_NAME_EXISTS',  105); // Компания уже существует
 
 // Ошибки базы данных (200-299)
 define('ERROR_DB_CONNECT', 201);         // Ошибка подключения к БД

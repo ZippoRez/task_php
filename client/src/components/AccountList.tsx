@@ -46,7 +46,7 @@ const AccountList: React.FC = () => {
 
         // Парсим ответ сервера в JSON
         const data = await response.json();
-
+        // console.log(data);
         // Обновляем состояния с полученными данными
         setAccounts(data.data); //  Список аккаунтов
         setTotalAccounts(data.pagination.totalItems); //  Общее количество аккаунтов

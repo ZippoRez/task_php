@@ -27,6 +27,7 @@ $accountId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Если передан ID аккаунта, получаем информацию о нем
     if ($accountId > 0) {
+        // Пытаемся получить данные аккаунта по ID
         if (!$accountObj->getAccountById($accountId)) {
             // Если аккаунт не найден, отправляем ошибку 404 Not Found
             http_response_code(404); 
@@ -37,8 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ]);
             exit; 
         }
-
-        // Отправляем данные аккаунта
+        // Если аккаунт найден, отправляем данные аккаунта в JSON формате
         http_response_code(200); 
         echo json_encode([
             'success' => true,
@@ -49,14 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Если ID аккаунта не передан, получаем список аккаунтов с пагинацией
         try {
             // Получаем параметры пагинации из запроса
-            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1; // Проверка на минимальное значение
-            $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10; // Проверка на минимальное значение
+            // Используем max(1, ...) для проверки на минимальное значение страницы и лимита
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10; 
+            // Проверяем, нужно ли получать удаленные аккаунты
             $deleted = filter_var($_GET['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
             // Получаем общее количество аккаунтов (для пагинации)
             $totalAccounts = $accountObj->getTotalAccounts();
 
             // Проверка на корректность параметров пагинации
+            // Если запрашиваемая страница выходит за пределы общего количества аккаунтов, 
+            // выбрасываем исключение
             if (($page - 1) * $limit > $totalAccounts) {
                 throw new Exception("Некорректные параметры пагинации."); 
             }
@@ -65,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $totalPages = ceil($totalAccounts / $limit);
 
             // Получаем список аккаунтов (с учетом deleted)
+            // В зависимости от значения $deleted вызываем соответствующий метод
             $accounts = $deleted ? $accountObj->getDeletedAccounts($page, $limit) : $accountObj->getAccounts($page, $limit);
 
             // Формируем массив данных аккаунтов для ответа
@@ -73,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $accountData[] = $account->toArray(); 
             }
 
-            // Формирование ответа
+            // Формирование ответа с данными аккаунтов и информацией о пагинации
             $response = [
                 'success' => true,
                 'message' => 'Список аккаунтов',
@@ -85,15 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 ]
             ];
 
-            // Отправка ответа
+            // Отправка ответа с кодом 200 OK
             http_response_code(200); 
             echo json_encode($response);
 
         } catch (Exception $e) {
             // Логируем ошибку
             error_log("Ошибка при получении списка аккаунтов: " . $e->getMessage());
-
-            // Отправляем сообщение об ошибке
+            // Отправляем сообщение об ошибке с кодом 400 Bad Request
             http_response_code(400); 
             echo json_encode([
                 'success' => false,
@@ -102,8 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ]);
         }
     }
+// Обработка других HTTP-методов (не GET)
 } else {
-    // Обработка других HTTP-методов (не GET)
+    // Отправляем ошибку 405 Method Not Allowed, если метод не GET
     http_response_code(405); 
     echo json_encode(['success' => false, 'error' => 'Метод не разрешен. Используйте GET']);
 }
